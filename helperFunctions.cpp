@@ -100,3 +100,72 @@ std::pair<double, double> fetchDollarAndEuro(std::string date) {
 
     return {usd, eur};
 }
+
+std::string create_tables() {
+    std::string result = R"(<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Integracja systemów</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 50%;
+        margin-bottom: 40px;
+      }
+      th, td {
+        border: 1px solid #999;
+        padding: 8px 12px;
+        text-align: center;
+      }
+      h2 {
+        margin-top: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Integracja systemów</h1>
+
+      <h2>Tabela EUR</h2>
+      <table>
+        <tr>
+          <th>EUR range</th>
+          <th>mean value</th>
+        </tr>
+)";
+
+    std::string element;
+
+    double temp = 4.8;
+    for (int i = 9; i >= 0; i--) {
+        element = "<tr><td>" + std::to_string(temp) + " - " + std::to_string(temp + 0.09) + "</td><td>" + (std::to_string(usdVal[i]) == "-nan(ind)" ? "brak danych" : std::to_string(usdVal[i])) + "</td></tr>";
+        result += element;
+        temp -= 0.1;
+    }
+
+    result += R"(      </table>
+
+      <h2>Tabela USD</h2>
+      <table>
+        <tr>
+          <th>USD range</th>
+          <th>mean value</th>
+        </tr>)";
+
+    temp = 4.9;
+    for (int i = 19; i >= 0; i--) {
+        element = "<tr><td>" + std::to_string(temp) + " - " + std::to_string(temp + 0.09) + "</td><td>" + (std::to_string(usdVal[i]) == "-nan(ind)" ? "brak danych" : std::to_string(usdVal[i])) + "</td></tr>";
+        result += element;
+        temp -= 0.1;
+    }
+
+    result += R"(      </table>
+    </main>
+  </body>
+</html>)";
+
+    return result;
+}

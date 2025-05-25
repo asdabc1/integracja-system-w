@@ -75,5 +75,17 @@ http::response<http::string_body> handle_request(http::request<http::string_body
         return res;
     }
 
+    if (req.method() == http::verb::get && req.target() == "/overview") {
+        http::response<http::string_body> res{http::status::ok, req.version()};
+        res.set(http::field::server, "Beast");
+        res.set(http::field::content_type, "text/html");
+        res.keep_alive(req.keep_alive());
+
+        res.body() = create_tables();
+
+        res.prepare_payload();
+        return res;
+    }
+
     return http::response<http::string_body>{http::status::bad_request, req.version()};
 }

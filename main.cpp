@@ -4,6 +4,7 @@
 #include "requestHandlingAndRouting.h"
 #include "server.h"
 #include "ComparisonData.h"
+#include "indexAssigners.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -12,6 +13,12 @@ using tcp = net::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 boost::json::value data;
+
+double eurVal[10];
+int eurOcc[10];
+
+double usdVal[20];
+int usdOcc[20];
 
 int main() {
     try {
@@ -52,9 +59,40 @@ int main() {
                 fetchedRates[(*store)[i].getDate()] = (*store)[i].getCurrencies();
             }
         }
-        std::cout << "Kazdy obiekt danych posiada dane o walucie";
+        std::cout << "Kazdy obiekt danych posiada dane o walucie\n";
 
+        for (int i = 0, j = 0; i < 20; i++) {
+            if (i % 2 == 1)
+                ++j;
 
+            eurVal[j] = 0;
+            eurOcc[j] = 0;
+            usdVal[i] = 0;
+            usdOcc[i] = 0;
+        }
+
+        eurIndexAssigner e;
+        usdIndexAssigner u;
+
+        std::erase_if(*store, [](ComparisonData& x){return (x.getCurrencies().first == -1);});
+
+        for (int i = 0; i < store->size(); i++) {
+            eurVal[e[(*store)[i].getCurrencies().second]] += (*store)[i].getValue();
+            eurOcc[e[(*store)[i].getCurrencies().second]] += 1;
+
+            usdVal[u[(*store)[i].getCurrencies().first]] += (*store)[i].getValue();
+            usdOcc[u[(*store)[i].getCurrencies().first]] += 1;
+        }
+
+        for (int i = 0, j = 0; i < 20; i++) {
+            if (i % 2 == 1)
+                ++j;
+
+            eurVal[j] /= eurOcc[j];
+            usdVal[i] /= usdOcc[i];
+        }
+
+        std::cout << "all the values are now calculated\n";
 
         std::cin.get();
         ioc.stop();
