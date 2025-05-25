@@ -18,5 +18,6 @@
 #include <sstream>
 #include <map>
 #include <utility>
+#include <thread>
 
 #endif //INCLUDES_H

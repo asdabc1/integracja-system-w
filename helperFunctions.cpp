@@ -34,7 +34,9 @@ void removeObjectById(boost::json::value& data, const std::string& targetId) {
     }
 }
 
-std::pair<double, double> fetchDollarAndEuro(boost::asio::io_context &ioc, std::string date) {
+std::pair<double, double> fetchDollarAndEuro(std::string date) {
+    boost::asio::io_context ioc;
+
     ssl::context ctx(ssl::context::sslv23_client);
     tcp::resolver resolver(ioc);
     boost::asio::ssl::stream<beast::tcp_stream> stream(ioc, ctx);
@@ -50,7 +52,7 @@ std::pair<double, double> fetchDollarAndEuro(boost::asio::io_context &ioc, std::
 
     stream.handshake(ssl::stream_base::client);
 
-    std::string target = "https://api.nbp.pl/api/exchangerates/rates/A/USD/" + date + "/";
+    std::string target = "/api/exchangerates/rates/A/USD/" + date + "/";
 
     http::request<http::string_body> req{http::verb::get, target , 11};
     req.set(http::field::host, "api.nbp.pl");
@@ -63,9 +65,13 @@ std::pair<double, double> fetchDollarAndEuro(boost::asio::io_context &ioc, std::
     http::response<http::string_body> res;
     http::read(stream, buffer, res);
 
+    if (res.result() != http::status::ok) {
+        return {-1, -1};
+    }
+
     boost::json::value dollar = boost::json::parse(res.body());
 
-    target = "https://api.nbp.pl/api/exchangerates/rates/A/EUR/" + date + "/";
+    target = "/api/exchangerates/rates/A/EUR/" + date + "/";
 
     req = http::request<http::string_body>(http::verb::get, target, 11);
     req.set(http::field::host, "api.nbp.pl");
@@ -92,5 +98,5 @@ std::pair<double, double> fetchDollarAndEuro(boost::asio::io_context &ioc, std::
     double usd = dollar.as_object()["rates"].as_array()[0].as_object()["mid"].as_double();
     double eur = euro.as_object()["rates"].as_array()[0].as_object()["mid"].as_double();
 
-    return std::make_pair(usd, eur);
+    return {usd, eur};
 }
