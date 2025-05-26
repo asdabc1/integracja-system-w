@@ -48,18 +48,18 @@ int main() {
             store->emplace_back(element.as_object().at("date").as_string().c_str(), std::stod(element.as_object().at("awarded_value").as_string().c_str()));
         }
 
-        std::cout << "Zapisano dane o przetargach do obiektow\n";
+        std::cout << "core data loaded\n";
 
-        for (int i = 0; i < store->size(); i++) {
-            if (fetchedRates.contains((*store)[i].getDate()))
-                (*store)[i].setCurrencies(fetchedRates[(*store)[i].getDate()]);
+        for (auto & i : *store) {
+            if (fetchedRates.contains(i.getDate()))
+                i.setCurrencies(fetchedRates[i.getDate()]);
 
             else {
-                (*store)[i].setCurrencies(fetchDollarAndEuro((*store)[i].getDate()));
-                fetchedRates[(*store)[i].getDate()] = (*store)[i].getCurrencies();
+                i.setCurrencies(fetchDollarAndEuro(i.getDate()));
+                fetchedRates[i.getDate()] = i.getCurrencies();
             }
         }
-        std::cout << "Kazdy obiekt danych posiada dane o walucie\n";
+        std::cout << "assigned exchange rates data\n";
 
         for (int i = 0, j = 0; i < 20; i++) {
             if (i % 2 == 1)
@@ -76,12 +76,12 @@ int main() {
 
         std::erase_if(*store, [](ComparisonData& x){return (x.getCurrencies().first == -1);});
 
-        for (int i = 0; i < store->size(); i++) {
-            eurVal[e[(*store)[i].getCurrencies().second]] += (*store)[i].getValue();
-            eurOcc[e[(*store)[i].getCurrencies().second]] += 1;
+        for (const auto & i : *store) {
+            eurVal[e[i.getCurrencies().second]] += i.getValue();
+            eurOcc[e[i.getCurrencies().second]] += 1;
 
-            usdVal[u[(*store)[i].getCurrencies().first]] += (*store)[i].getValue();
-            usdOcc[u[(*store)[i].getCurrencies().first]] += 1;
+            usdVal[u[i.getCurrencies().first]] += i.getValue();
+            usdOcc[u[i.getCurrencies().first]] += 1;
         }
 
         for (int i = 0, j = 0; i < 20; i++) {

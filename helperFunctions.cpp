@@ -169,3 +169,23 @@ std::string create_tables() {
 
     return result;
 }
+
+std::string generate_token() {
+    std::ostringstream ss;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 15);
+    for (int i = 0; i < 32; ++i)
+        ss << std::hex << dis(gen);
+    return ss.str();
+}
+
+std::string get_token_from_cookie(const std::string &cookie_header) {
+    std::string prefix = "token=";
+    size_t pos = cookie_header.find(prefix);
+    if (pos != std::string::npos) {
+        size_t end = cookie_header.find(";", pos);
+        return cookie_header.substr(pos + prefix.size(), end - pos - prefix.size());
+    }
+    return "";
+}

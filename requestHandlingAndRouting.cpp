@@ -7,6 +7,22 @@ using tcp = net::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 http::response<http::string_body> handle_request(http::request<http::string_body> const &req) {
+    if (req.target() != "/login" && req.target() != "/index") {
+        std::string cookie;
+        if (req.find(http::field::cookie) != req.end()) {
+            cookie = std::string(req[http::field::cookie]);
+        }
+
+        std::string token = get_token_from_cookie(cookie);
+        if (sessions.find(token) == sessions.end()) {
+            http::response<http::string_body> res{http::status::unauthorized, req.version()};
+            res.set(http::field::content_type, "text/plain");
+            res.body() = "Brak dostępu - niezalogowany.";
+            res.prepare_payload();
+            return res;
+        }
+    }
+
     if (req.method() == http::verb::get && req.target().starts_with("/dane")) {
         http::response<http::string_body> res{http::status::ok, req.version()};
         res.set(http::field::server, "Beast");
@@ -68,6 +84,11 @@ http::response<http::string_body> handle_request(http::request<http::string_body
         <h1>Integracja systemów</h1>
         <a href="overview">overview</a>
         <a href="graph">graph</a>
+        <form method="POST" action="/login">
+            <label>Login: <input name="login" /></label><br/>
+            <label>Hasło: <input name="password" type="password" /></label><br/>
+            <button type="submit">Zaloguj</button>
+        </form>
     </main>
   </body>
 </html>)";
@@ -85,6 +106,103 @@ http::response<http::string_body> handle_request(http::request<http::string_body
 
         res.prepare_payload();
         return res;
+    }
+
+    if (req.method() == http::verb::get && req.target() == "/graph") {
+        {
+        std::ofstream jsonFile("usd_data.json");
+        jsonFile << "{\n  \"usd_ranges\": [\n";
+        for (int i = 0; i < 20; ++i) {
+            double start = 3.5 + 0.05 * i;
+            double end = start + 0.049;
+            jsonFile << "    \"" << std::fixed << std::setprecision(6) << start
+                     << " - " << end << "\"";
+            if (i < 19) jsonFile << ",\n";
+        }
+        jsonFile << "\n  ],\n  \"mean_values\": [\n";
+        for (int i = 0; i < 20; ++i) {
+            if (usdOcc[i] == 0)
+                jsonFile << "    null";
+            else
+                jsonFile << "    " << std::fixed << std::setprecision(6) << usdVal[i] / usdOcc[i];
+            if (i < 19) jsonFile << ",\n";
+        }
+        jsonFile << "\n  ]\n}";
+    } {
+            std::ofstream jsonFile("eur_data.json");
+            jsonFile << "{\n  \"eur_ranges\": [\n";
+            for (int i = 0; i < 10; ++i) {
+                double start = 3.0 + 0.1 * i;
+                double end = start + 0.09;
+                jsonFile << "    \"" << std::fixed << std::setprecision(6) << start
+                        << " - " << end << "\"";
+                if (i < 9) jsonFile << ",\n";
+            }
+            jsonFile << "\n  ],\n  \"mean_values\": [\n";
+            for (int i = 0; i < 10; ++i) {
+                double mean = eurOcc[i] == 0 ? std::numeric_limits<double>::quiet_NaN() : eurVal[i] / eurOcc[i];
+                if (std::isnan(mean) || std::isinf(mean)) {
+                    jsonFile << "    null";
+                } else {
+                    jsonFile << "    " << std::fixed << std::setprecision(6) << mean;
+                }
+                if (i < 9) jsonFile << ",\n";
+            }
+            jsonFile << "\n  ]\n}";
+            jsonFile.close();
+        }
+
+    int result = std::system("python ../wykresy.py usd_data.json eur_data.json");
+
+    if (result != 0) {
+        http::response<http::string_body> res{http::status::internal_server_error, req.version()};
+        res.set(http::field::content_type, "text/plain");
+        res.body() = "Błąd przy generowaniu wykresów.";
+        res.prepare_payload();
+        return res;
+    }
+
+    std::ifstream htmlFile("all_plot.html");
+    std::stringstream buffer;
+    buffer << htmlFile.rdbuf();
+
+    http::response<http::string_body> res{http::status::ok, req.version()};
+    res.set(http::field::server, "Beast");
+    res.set(http::field::content_type, "text/html");
+    res.keep_alive(req.keep_alive());
+    res.body() = buffer.str();
+    res.prepare_payload();
+    return res;
+    }
+
+    if (req.method() == http::verb::post && req.target() == "/login") {
+        std::string body = req.body();
+        std::string username, password;
+
+        size_t pos1 = body.find("login=");
+        size_t pos2 = body.find("&password=");
+        if (pos1 != std::string::npos && pos2 != std::string::npos) {
+            username = body.substr(pos1 + 6, pos2 - (pos1 + 6));
+            password = body.substr(pos2 + 10);
+        }
+
+        if (username == "admin" && password == "haslo123") {
+            std::string token = generate_token();
+            sessions[token] = username;
+
+            http::response<http::string_body> res{http::status::ok, req.version()};
+            res.set(http::field::content_type, "text/plain");
+            res.set(http::field::set_cookie, "token=" + token + "; HttpOnly; Path=/");
+            res.body() = "Zalogowano pomyślnie";
+            res.prepare_payload();
+            return res;
+        } else {
+            http::response<http::string_body> res{http::status::unauthorized, req.version()};
+            res.set(http::field::content_type, "text/plain");
+            res.body() = "Błędne dane logowania";
+            res.prepare_payload();
+            return res;
+        }
     }
 
     return http::response<http::string_body>{http::status::bad_request, req.version()};
