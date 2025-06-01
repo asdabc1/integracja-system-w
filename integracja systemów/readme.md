@@ -21,7 +21,7 @@ git clone https://github.com/asdabc1/integracja-system-w
 
 ### 2. Start the app
 ```terminal
-cd integracja
+cd "integracja systemów"
 docker-compose up --build
 ```
 
