@@ -22,6 +22,10 @@ public:
     [[nodiscard]] std::string getDate() const;
     [[nodiscard]] double getValue() const;
     [[nodiscard]] std::pair<double, double> getCurrencies() const;
+
+    void save(mysqlx::Session& session) const;
+    static std::optional<ComparisonData> loadByDate(mysqlx::Session& session, const std::string& date);
+    static void removeByDate(mysqlx::Session& session, const std::string& date);
 };
 
 

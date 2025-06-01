@@ -34,7 +34,7 @@ void removeObjectById(boost::json::value& data, const std::string& targetId) {
     }
 }
 
-std::pair<double, double> fetchDollarAndEuro(std::string date) {
+std::pair<double, double> fetchDollarAndEuro(const std::string& date) {
     boost::asio::io_context ioc;
 
     ssl::context ctx(ssl::context::sslv23_client);

@@ -17,7 +17,7 @@ http::response<http::string_body> handle_request(http::request<http::string_body
         if (sessions.find(token) == sessions.end()) {
             http::response<http::string_body> res{http::status::unauthorized, req.version()};
             res.set(http::field::content_type, "text/plain");
-            res.body() = "Brak dostępu - niezalogowany.";
+            res.body() = "Brak dostepu - niezalogowany.";
             res.prepare_payload();
             return res;
         }
@@ -82,8 +82,6 @@ http::response<http::string_body> handle_request(http::request<http::string_body
   <body>
     <main>
         <h1>Integracja systemów</h1>
-        <a href="overview">overview</a>
-        <a href="graph">graph</a>
         <form method="POST" action="/login">
             <label>Login: <input name="login" /></label><br/>
             <label>Hasło: <input name="password" type="password" /></label><br/>
@@ -190,10 +188,9 @@ http::response<http::string_body> handle_request(http::request<http::string_body
             std::string token = generate_token();
             sessions[token] = username;
 
-            http::response<http::string_body> res{http::status::ok, req.version()};
-            res.set(http::field::content_type, "text/plain");
+            http::response<http::string_body> res{http::status::see_other, req.version()};
+            res.set(http::field::location, "/main");
             res.set(http::field::set_cookie, "token=" + token + "; HttpOnly; Path=/");
-            res.body() = "Zalogowano pomyślnie";
             res.prepare_payload();
             return res;
         } else {
@@ -203,6 +200,32 @@ http::response<http::string_body> handle_request(http::request<http::string_body
             res.prepare_payload();
             return res;
         }
+    }
+
+    if (req.method() == http::verb::get && req.target() == "/main") {
+        http::response<http::string_body> res{http::status::ok, req.version()};
+        res.set(http::field::content_type, "text/html");
+        res.keep_alive(req.keep_alive());
+        res.set(http::field::server, "Beast");
+        res.body() = R"(<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Integracja systemów</title>
+  </head>
+  <body>
+    <main>
+        <h1>Integracja systemów</h1>
+        <a href="overview">overview</a>
+        <a href="graph">graph</a>
+        <a href="dane>JSON</a>
+    </main>
+  </body>
+</html>)";
+        res.prepare_payload();
+        return res;
     }
 
     return http::response<http::string_body>{http::status::bad_request, req.version()};

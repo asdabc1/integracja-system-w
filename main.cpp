@@ -22,6 +22,13 @@ int usdOcc[20];
 
 int main() {
     try {
+        mysqlx::Session session(
+            mysqlx::SessionOption::HOST, "127.0.0.1",
+            mysqlx::SessionOption::PORT, 33060,
+            mysqlx::SessionOption::USER, "root",
+            mysqlx::SessionOption::PWD, "rootpassword",
+            mysqlx::SessionOption::DB, "integracja"
+        );
         net::io_context ioc;
 
         std::ifstream fs("data1.json");
@@ -82,6 +89,8 @@ int main() {
 
             usdVal[u[i.getCurrencies().first]] += i.getValue();
             usdOcc[u[i.getCurrencies().first]] += 1;
+
+            i.save(session);
         }
 
         for (int i = 0, j = 0; i < 20; i++) {
@@ -96,6 +105,7 @@ int main() {
 
         std::cin.get();
         ioc.stop();
+        session.close();
 
     } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;

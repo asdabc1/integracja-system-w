@@ -8,12 +8,13 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/config.hpp>
+#include <boost/json.hpp>
+#include <boost/asio/ssl.hpp>
+
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
-#include <boost/json.hpp>
-#include <boost/asio/ssl.hpp>
 #include <fstream>
 #include <sstream>
 #include <map>
@@ -22,4 +23,5 @@
 #include <unordered_map>
 #include <random>
 
+#include <mysqlx/xdevapi.h>
 #endif //INCLUDES_H
